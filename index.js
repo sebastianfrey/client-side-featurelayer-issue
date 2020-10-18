@@ -3,8 +3,9 @@ require([
   'esri/views/MapView',
   'esri/Graphic',
   'esri/layers/FeatureLayer',
-  'esri/layers/GroupLayer'
-], function(Map, MapView, Graphic, FeatureLayer, GroupLayer){
+  'esri/layers/GroupLayer',
+  'esri/core/watchUtils',
+], function(Map, MapView, Graphic, FeatureLayer, GroupLayer, watchUtils){
 
   /**
    * Create random Features.
@@ -77,7 +78,7 @@ require([
 
       layers.push(fl);
 
-      view.watch('stationary', () => {
+      watchUtils.whenTrue(view, 'stationary', () => {
         fl.queryFeatures().then(({ features }) => {
           return fl.applyEdits({
             deleteFeatures: features,
@@ -111,7 +112,21 @@ require([
   });
 
   view.when(() => {
-    map.layers.addMany([...createFeatureLayers(view, { total: 10, group: true }), ...createFeatureLayers(view, { total: 10, group: true })]);
+
+    const layers = [new GroupLayer(), new GroupLayer()].map((groupLayer) => {
+
+      groupLayer.addMany([
+        ...createFeatureLayers(view, { total: 10, group: true }),
+        ...createFeatureLayers(view, { total: 10, group: true }),
+        ...createFeatureLayers(view, { total: 1 })
+      ]);
+
+      return groupLayer;
+    });
+
+    console.info(layers);
+
+    map.layers.addMany(layers);
 
     console.info('App is ready!', { map, view });
   });
