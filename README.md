@@ -1,14 +1,6 @@
 # Rendering issue with Client-Side FeatureLayer
 
-This repository demonstrates an issue when creating multiple FeatureLayers from client-side Graphics. The issue causes the browser to gobble a huge amount of memory (Up to 3GB and more). This crashes the browser tab after a while.
-
-## How to reproduce?
-
-The following video demonstrates the issue:
-
-![](./assets/demo.gif)
-
-A running version of the sample application in the above video can be found here https://sebastianfrey.github.io/client-side-featurelayer-issue/.
+This repository contains a sample Application, which demonstrates an issue when creating multiple FeatureLayers from client-side Graphics. The issue let the browser gobble a huge amount of memory (Up to 2GB and more). After a while this causes a cras of the browser tab.
 
 ## What does the sample Application?
 The application does the following:
@@ -22,4 +14,9 @@ Each client-side FeatureLayer contains initially one random Polygon.
 
 Everytime the MapView goes `stationary` for every FeatureLayer a completely new random Polygon is generated and applied to the source. All previous polygons are deleted. This means there are in total 42 features to render.
 
+## How to reproduce?
+The following video demonstrates the issue:
 
+![](./assets/demo.gif)
+
+A running version of the sample application in the above video can be found here https://sebastianfrey.github.io/client-side-featurelayer-issue/.
