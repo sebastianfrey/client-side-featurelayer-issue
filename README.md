@@ -12,7 +12,7 @@ After the applications MapView is ready, two GroupLayers are created and added t
 
 Each client-side FeatureLayer contains initially one random Polygon.
 
-Everytime the MapView goes `stationary` for every FeatureLayer a completely new random Polygon is generated and applied to the source using `[FeatureLayer#applyEdits()](https://developers.arcgis.com/javascript/latest/api-reference/esri-layers-FeatureLayer.html#applyEdits)`. All previous polygons are deleted. This means there are in total 42 features to render.
+Everytime the MapView goes `stationary` for every FeatureLayer a completely new random Polygon is generated and applied to the source using [FeatureLayer#applyEdits()](https://developers.arcgis.com/javascript/latest/api-reference/esri-layers-FeatureLayer.html#applyEdits). All previous polygons are deleted. This means there are in total 42 features to render.
 
 ## Further assets
 The following video demonstrates the issue:
