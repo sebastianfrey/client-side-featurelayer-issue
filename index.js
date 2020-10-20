@@ -1,11 +1,11 @@
 require([
-  'esri/Map',
-  'esri/views/MapView',
-  'esri/Graphic',
+  'esri/map',
+  'esri/graphic',
   'esri/layers/FeatureLayer',
-  'esri/layers/GroupLayer',
-  'esri/core/watchUtils',
-], function(Map, MapView, Graphic, FeatureLayer, GroupLayer, watchUtils){
+  'esri/renderers/jsonUtils',
+  'esri/geometry/jsonUtils',
+  'dojo/ready'
+], function(Map, Graphic, FeatureLayer, rendererUtils, geometryUtils, ready){
 
   /**
    * Create random Features.
@@ -17,11 +17,11 @@ require([
 
     const features = [];
     turf.featureEach(polygons, function (currentFeature) {
-      features.push(Graphic.fromJSON({
-        geometry: {
+      features.push(new Graphic({
+        geometry: geometryUtils.fromJson({
           type: 'polygon', // autocasts as new Point()
           rings: currentFeature.geometry.coordinates.map((coordinate) => coordinate.reverse()),
-        }
+        })
       }));
     });
 
@@ -34,100 +34,81 @@ require([
    * @param {number} total The number of FeatureLayers to create.
    * @param {boolean} group Return FeatureLayers bounded to a GroupLayer.
    */
-  function createFeatureLayers(view, { total = 10, group = false } = {}) {
+  function createFeatureLayers(map, { total = 10 } = {}) {
     const layers = [];
 
     [...Array(total).keys()].forEach(() => {
-      const polygonRenderer = {
-        type: 'simple',  // autocasts as new SimpleRenderer()
+      const polygonRenderer = rendererUtils.fromJson({
+        type: "simple",
         symbol: {
-          type: 'simple-fill',  // autocasts as new SimpleFillSymbol()
+          type: "esriSFS",
+          style: "esriSFSSolid",
           color: [ 51,51, 204, 0.9 ],
-          style: 'solid',
-          outline: {  // autocasts as new SimpleLineSymbol()
-            color: 'white',
+          outline: {
+            type: "esriSLS",
+            style: "esriSLSSolid",
+            color: [ 255, 255, 255 ],
             width: 1
           }
         }
-      };
-
-      const features = createFeatures(1);
+      });
 
       const fl = new FeatureLayer({
-        source: features,
-        renderer: polygonRenderer,
-        objectIDField: 'ObjectID',
-        fields: [
-          {
-            name: 'ObjectID',
-            alias: 'ObjectID',
-            type: 'oid'
-          },
-          {
-            name: 'ProjectName',
-            alias: 'ProjectName',
-            type: 'string'
-          },
-          {
-            name: 'SiteName',
-            alias: 'SiteName',
-            type: 'string'
+        layerDefinition: {
+          geometryType: "esriGeometryPolygon",
+          fields: [
+            {
+              name: 'ObjectID',
+              alias: 'ObjectID',
+              type: 'esriFieldTypeOID'
+            },
+            {
+              name: 'ProjectName',
+              alias: 'ProjectName',
+              type: 'esriFieldTypeString'
+            },
+            {
+              name: 'SiteName',
+              alias: 'SiteName',
+              type: 'esriFieldTypeString'
+            }
+          ],
+          drawingInfo: {
+            renderer: polygonRenderer
           }
-        ]
+        },
+        featureSet: null
+      });
+
+      fl.on('load', () => {
+        createFeatures(1).forEach((feature) => fl.add(feature))
+      });
+
+
+      map.on("extent-change", () => {
+        try {
+          fl.clear();
+        } catch {}
+        createFeatures(1).forEach((feature) => fl.add(feature))
       });
 
       layers.push(fl);
-
-      watchUtils.whenTrue(view, 'stationary', () => {
-        fl.queryFeatures().then(({ features }) => {
-          return fl.applyEdits({
-            deleteFeatures: features,
-            addFeatures: createFeatures(1)
-          });
-        }).catch((err) => console.error(err));
-      });
     });
 
-    if (group) {
-      const groupLayer = new GroupLayer();
-
-      groupLayer.addMany(layers);
-
-      return [groupLayer];
-    } else {
-      return layers;
-    }
+    return layers;
   }
 
+  ready(() => {
   // create the map view
-  const map = new Map({
-    basemap: 'gray'
-  });
-
-  const view = new MapView({
-    container: 'map',
-    map: map,
-    center: [-110, 30],
-    zoom: 5
-  });
-
-  view.when(() => {
-
-    const layers = [new GroupLayer(), new GroupLayer()].map((groupLayer) => {
-
-      groupLayer.addMany([
-        ...createFeatureLayers(view, { total: 10, group: true }),
-        ...createFeatureLayers(view, { total: 10, group: true }),
-        ...createFeatureLayers(view, { total: 1 })
-      ]);
-
-      return groupLayer;
+    const map = new Map('map', {
+      basemap: 'gray'
     });
 
-    console.info(layers);
+    map.on("load", () => {
+      map.addLayers(createFeatureLayers(map, { total: 42, group: true }))
 
-    map.layers.addMany(layers);
+      console.info('App is ready!', { map });
 
-    console.info('App is ready!', { map, view });
+    });
   });
 });
